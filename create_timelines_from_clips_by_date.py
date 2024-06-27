@@ -3,8 +3,8 @@
 import DaVinciResolveScript as dvr_script
 resolve = dvr_script.scriptapp("Resolve")
 
-template_node_graph_drx=r'F:\Video Editing\PowerGrades\Base Template Node Graph_1.1.1.drx'
-global_look_drx=r'F:\Video Editing\PowerGrades\My CKC LUT Look 1_1.478.1.T.drx'
+template_node_graph_drx=r'Y:\Resolve Powergrades\New Template 2024.drx'
+global_look_drx=r'Y:\Resolve Powergrades\My CKC LUT Look 1_1.478.1.T.drx'
 
 print("Got resolve")
 
@@ -69,8 +69,17 @@ for clip in clips.values():
 
     timelines_for_dates[timeline_name].append(clip)
 
+
+# Sort the timelines alphabetical
+# ChatGPT made this magic oneliner for me. Sorcery or magic I'm not sure
+timelines_for_dates = dict(sorted(timelines_for_dates.items(), key=lambda item: item[0]))
+
 # Create the timelines
 for timeline_name, clips in timelines_for_dates.items():
+    print(f"Sorting {timeline_name}")
+
+    clips = sorted(clips, key=lambda clip: clip.GetClipProperty("Date Modified"))
+
     print(f"Creating: {timeline_name} with {len(clips)} clips.")
     mediapool.CreateTimelineFromClips(timeline_name, clips)
 
@@ -85,21 +94,6 @@ for timeline_name, clips in timelines_for_dates.items():
     timeline.ApplyGradeFromDRX(template_node_graph_drx, 0, timeline_clips)
     timeline.ApplyGradeFromDRX(global_look_drx)
 
-
-
-    #print("Fixing TC on: " + name + 'Mod: '+modified)
-
-    #startTc = clip.GetClipProperty('Start TC')
-    #print("Old TC:" + startTc)
-    #newTc = adjustTimeCodeByHours(startTc, 5)
-    
-    #newTc = getTimecodeFromModifyDate(modified)
-    
-    #print("New TC:" + newTc)
-    
-    #clip.SetClipProperty('Start TC', newTc)
-
-#       # Check back new timecodes, V17
-#       print clip.GetClipProperty('Start TC'),\
-#             clip.GetClipProperty('Clip Name')
+    import time
+    time.sleep(2)
 
