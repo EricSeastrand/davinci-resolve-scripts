@@ -1,9 +1,5 @@
-#!C:\Python3\python.exe
 
-import DaVinciResolveScript as dvr_script
-resolve = dvr_script.scriptapp("Resolve")
-
-template_node_graph_drx=r'Y:\Resolve Powergrades\New Template 2024.drx'
+template_node_graph_drx=r'Y:\Resolve Powergrades\New Template 2025.drx'
 global_look_drx=r'Y:\Resolve Powergrades\My CKC LUT Look 1_1.478.1.T.drx'
 
 print("Got resolve")
@@ -74,12 +70,55 @@ for clip in clips.values():
 # ChatGPT made this magic oneliner for me. Sorcery or magic I'm not sure
 timelines_for_dates = dict(sorted(timelines_for_dates.items(), key=lambda item: item[0]))
 
+def handle_timeline_clip(video_clip):
+    clip_node_graph = video_clip.GetNodeGraph()
+    clip_node_graph.ApplyGradeFromDRX(template_node_graph_drx, 0)
+
+def cleanup_timeline_clip(video_clip):
+    source_camera = get_camera_name_for_clip(video_clip.GetMediaPoolItem())
+    clip_node_graph = video_clip.GetNodeGraph()
+    if source_camera == 'A7C':
+        clip_node_graph.SetNodeEnabled(1, True)
+    else:
+        clip_node_graph.SetNodeEnabled(1, False)
+
+def get_sort_value_for_clip(clip):
+    "Allows us to apply an arbitrary time adjustment for when cameras' datetime was out of sync by a known amount"
+    modified_time_str = clip.GetClipProperty("Date Modified")
+
+    modified_time = parseDateModifiedToDateTime(modified_time_str)
+
+    came_from_camera = get_camera_name_for_clip(clip)
+    
+    # if(came_from_camera == 'ZVE1'):
+    #     from datetime import timedelta
+    #     sony_offset = timedelta(hours=-1)
+    #     modified_time = modified_time + sony_offset
+    
+    print(f"{came_from_camera=} {modified_time=} {modified_time_str=}")
+    return modified_time
+
+
+def get_camera_name_for_clip(clip):
+    colorspace = clip.GetClipProperty('Input Color Space')
+    camera_colorspaces = {
+        'S-Gamut3/S-Log3': 'ZVE1',
+        'S-Gamut/S-Log': 'A7C',
+        'Rec.2020 (Scene)': 'iPhone'
+    }
+
+    return camera_colorspaces.get(colorspace, 'Other')
+
+
+timelines_created = 0
+timelines_to_create = len(timelines_for_dates)
+
 # Create the timelines
 for timeline_name, clips in timelines_for_dates.items():
-    print(f"Sorting {timeline_name}")
+    print(f"Creating {timelines_created+1} of {timelines_to_create} : {timeline_name}")
 
-    clips = sorted(clips, key=lambda clip: clip.GetClipProperty("Date Modified"))
-
+    clips = sorted(clips, key=lambda clip: get_sort_value_for_clip(clip))
+    
     print(f"Creating: {timeline_name} with {len(clips)} clips.")
     mediapool.CreateTimelineFromClips(timeline_name, clips)
 
@@ -91,9 +130,18 @@ for timeline_name, clips in timelines_for_dates.items():
 
     timeline_clips = timeline.GetItemListInTrack('video', 1)
 
-    timeline.ApplyGradeFromDRX(template_node_graph_drx, 0, timeline_clips)
-    timeline.ApplyGradeFromDRX(global_look_drx)
+    for clip in timeline_clips:
+        handle_timeline_clip(clip)
+        cleanup_timeline_clip(clip)
+    
+    # break
+    # timeline_node_graph = timeline.GetNodeGraph()
+    # timeline_node_graph.ApplyGradeFromDRX(template_node_graph_drx)
 
-    import time
-    time.sleep(2)
+    # import time
+    # time.sleep(2)
+    timelines_created += 1
+
+    # if timelines_created > 0:
+    #     break
 
