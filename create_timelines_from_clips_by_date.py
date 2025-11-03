@@ -1,4 +1,8 @@
 
+from add_times_to_video_clips import apply_text_to_timeline_clips, set_resolve
+
+set_resolve(resolve)
+
 template_node_graph_drx=r'Y:\Resolve Powergrades\New Template 2025.drx'
 global_look_drx=r'Y:\Resolve Powergrades\My CKC LUT Look 1_1.478.1.T.drx'
 
@@ -43,6 +47,18 @@ def generateTimelineName(clip):
     datetime = parseDateModifiedToDateTime(date_string)
     
     return datetime.strftime("%Y-%m-%d %a")
+
+def generateClipDateText(clip):
+    date_string = clip.GetClipProperty("Date Modified")
+    datetime = parseDateModifiedToDateTime(date_string)
+    
+    return datetime.strftime("%b %d %Y")
+
+def generateClipTimeText(clip):
+    date_string = clip.GetClipProperty("Date Modified")
+    datetime = parseDateModifiedToDateTime(date_string)
+    
+    return datetime.strftime("%a %I:%M %p")
 
 timelines_for_dates = {}
 
@@ -124,23 +140,33 @@ for timeline_name, clips in timelines_for_dates.items():
 
     timeline = project.GetCurrentTimeline()
 
-
-
     print("Created" + timeline.GetName())
 
     timeline_clips = timeline.GetItemListInTrack('video', 1)
 
+    def make_text(clip):
+        clip = clip.GetMediaPoolItem()
+        print(clip)
+        
+        return (
+            generateClipDateText(clip),
+            generateClipTimeText(clip)
+        )
+
+    apply_text_to_timeline_clips(make_text, timeline_clips)
+
     for clip in timeline_clips:
         handle_timeline_clip(clip)
         cleanup_timeline_clip(clip)
-    
+    timelines_created += 1
+
     # break
     # timeline_node_graph = timeline.GetNodeGraph()
     # timeline_node_graph.ApplyGradeFromDRX(template_node_graph_drx)
 
     # import time
     # time.sleep(2)
-    timelines_created += 1
+    
 
     # if timelines_created > 0:
     #     break
